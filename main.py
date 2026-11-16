@@ -26,22 +26,18 @@ from typing import List, Optional
 
 from z3 import *
 
+set_param(proof=True)
 
 def solve_horn(chc, timeout_ms: int = 10_000):
     s = SolverFor("HORN")
     s.set("engine", "spacer")
-    s.set("proof", True)
     s.set("timeout", timeout_ms)
     s.set("xform.inline_eager", False)
     s.set("xform.inline_linear", False)
     s.set("xform.slice", False)
     s.add(chc)
     res = s.check()
-    answer = None
-    try:
-        answer = s.model() if res == sat else s.proof() if res == unsat else None
-    except Z3Exception:
-        pass
+    answer = s.model() if res == sat else s.proof() if res == unsat else None
     return res, answer
 
 
