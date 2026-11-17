@@ -88,13 +88,23 @@ def double(x: int) -> int:
         z = z + 2
     return z
 
+Double = Function("Double", IntSort(), IntSort(), BoolSort())
+DoubleLoop = Function("DoubleLoop", IntSort(), IntSort(), IntSort(), BoolSort())
 
 def task_1_chc():
-    return []
+    x, i, z, res = Ints("x i z res")
+    return [
+        ForAll([x], DoubleLoop(x, 0, 0)),
+        ForAll([x, i, z], Implies(And(DoubleLoop(x, i, z), i < x), DoubleLoop(x, i + 1, z + 2))),
+        ForAll([x, i, z], Implies(And(DoubleLoop(x, i, z), x <= i), Double(x, z))),
+        ForAll([x, res], Implies(And(Double(x, res), x >= 0, res != 2 * x), False)),
+
+    ]
 
 
 def task_1_check(model, x: int, res: int) -> Optional[bool]:
-    return None
+        return evaluate(model.eval(Double(IntVal(x), IntVal(res))))
+
 
 
 ##################################################
@@ -109,13 +119,22 @@ def ack(m: int, n: int) -> int:
     else:
         return ack(m - 1, ack(m, n - 1))
 
-
+Ack = Function("Ack", IntSort(), IntSort(), IntSort(), BoolSort())
 def task_2_chc():
-    return []
+    m, n, t, res = Ints("m n t res")
+
+    return [
+        ForAll([n], Ack(0, n, n+1)),
+        ForAll([m, res], Implies(And(m > 0, Ack(m - 1, 1, res)), Ack(m, 0, res))),
+        ForAll([m, n, t, res], Implies(And(m > 0, n > 0, Ack(m, n - 1, t), 
+                                           Ack(m - 1, t, res)), Ack(m, n, res))),
+
+        ForAll([m, n, res], Implies(And(Ack(m, n, res), m >= 0, n >= 0, res < n), False)),
+    ]
 
 
 def task_2_check(model, m: int, n: int, res: int) -> Optional[bool]:
-    return None
+    return evaluate(model.eval(Ack(IntVal(m), IntVal(n), IntVal(res))))
 
 
 ##################################################
@@ -131,13 +150,33 @@ def search_in_array(array: List[int], value: int) -> int:
             return i
     return -1
 
+SearchLoop = Function("SearchLoop", ArraySort(IntSort(), IntSort()), IntSort(), IntSort(), IntSort(), BoolSort())
+Search = Function("Search", ArraySort(IntSort(), IntSort()), IntSort(), IntSort(), IntSort(), BoolSort())
+
 
 def task_3_chc():
-    return []
-
+    array = Array("array", IntSort(), IntSort())
+    n, v, i, res = Ints("n v i res")
+    return [ ForAll([array, n, v], Implies(n >= 0, SearchLoop(array, n, v, 0))),
+        ForAll([array, n, v, i], Implies(And(SearchLoop(array, n, v, i), i < n, 
+                                             Select(array, i) != v), SearchLoop(array, n, v, i + 1))),
+        ForAll([array, n, v, i], Implies(And(SearchLoop(array ,n, v, i), i < n, 
+                                             Select(array, i) == v), Search(array, n, v, i))),
+        ForAll([array, n, v, i], Implies(And(SearchLoop(array,n, v, i), i >= n), Search(array, n, v, -1))),
+        
+        ForAll([array, n, v, res], Implies(
+            And(Search(array, n, v, res), n >= 0,
+                Not(Or(res == -1, And(0 <= res, res < n, Select(array, res) == v)))), False
+        )),
+    ]
 
 def task_3_check(model, array: List[int], value: int, res: int) -> Optional[bool]:
-    return None
+    arr = Array("arr", IntSort(), IntSort())
+    for i, v in enumerate(array):
+        arr = Store(arr, i, v)
+    return evaluate(model.eval(Search(arr, IntVal(len(array)), IntVal(value), IntVal(res))))
+
+
 
 
 ##################################################
@@ -165,14 +204,24 @@ def recursive_simple(a: int, b: int) -> int:
 
     return res
 
+Ex = Function("Ex", IntSort(), IntSort(), BoolSort())
 
 def task_4_chc():
-    return []
+    a, b = Ints("a b")
+    return [
+        ForAll([a, b], Implies(a < 0, Ex(a, b))),
+        ForAll([a, b], Implies(b < 0, Ex(a, b))),
+
+        ForAll([a, b], Implies(And(a >= 0, b >= 0, a < b, a < 17), Ex(a, b))),
+        ForAll([a, b], Implies(And(a >= 0, b >= 0, a > b, Ex(a - 1, b)), Ex(a, b))),
+        ForAll([a, b], Implies(And(a >= 0, b >= 0, a == b, Ex(a - 1, b - 2)), Ex(a, b))),
+    ]
 
 
 def task_4_check(model, a: int, b: int) -> Optional[bool]:
     """Значение слабейшего предусловия на (a, b): True — исключения не будет."""
-    return None
+    return evaluate(model.eval(Not(Ex( IntVal(a), IntVal(b)))))
+
 
 
 ##################################################
